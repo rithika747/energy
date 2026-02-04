@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Consumption Analysis - Pie Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .chart-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .chart-title {
+            text-align: center;
+            color: #444;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        canvas {
+            max-height: 400px;
+        }
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .summary-box h2 {
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Residential Energy Consumption Analysis</h1>
+        <p class="subtitle">Monthly Energy Usage Distribution by Category</p>
+        
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">Overall Energy Distribution</h3>
+                <canvas id="overallChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">Energy Consumption (kWh)</h3>
+                <canvas id="consumptionChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">Lighting Breakdown</h3>
+                <canvas id="lightingChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">Cooling Load Breakdown</h3>
+                <canvas id="coolingChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">Kitchen Appliances Breakdown</h3>
+                <canvas id="kitchenChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">Water Appliances Breakdown</h3>
+                <canvas id="waterChart"></canvas>
+            </div>
+        </div>
+
+        <div class="summary-box">
+            <h2>📊 Key Statistics</h2>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <span class="stat-value">2,231.45</span>
+                    <span class="stat-label">Total kWh/month</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">58.5%</span>
+                    <span class="stat-label">Cooling Load</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">₹17,850 - ₹22,315</span>
+                    <span class="stat-label">Estimated Monthly Cost</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">30-40%</span>
+                    <span class="stat-label">Potential Savings</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Color schemes
+        const mainColors = [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF'
+        ];
+
+        const lightingColors = [
+            '#FF6384',
+            '#FF8A9B',
+            '#FFB1BE',
+            '#36A2EB',
+            '#66B8F0',
+            '#99CEF5'
+        ];
+
+        const coolingColors = [
+            '#36A2EB',
+            '#66B8F0',
+            '#99CEF5'
+        ];
+
+        const kitchenColors = [
+            '#FFCE56',
+            '#FFD97D',
+            '#FFE4A3'
+        ];
+
+        const waterColors = [
+            '#4BC0C0',
+            '#70CCC9',
+            '#94D8D3',
+            '#B9E4DD'
+        ];
+
+        // Chart configuration
+        const chartConfig = {
+            type: 'pie',
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed + ' kWh (' + 
+                                        ((context.parsed / context.dataset.data.reduce((a, b) => a + b, 0)) * 100).toFixed(1) + '%)';
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Overall Distribution Chart
+        new Chart(document.getElementById('overallChart'), {
+            ...chartConfig,
+            data: {
+                labels: ['Cooling Load', 'Water Appliances', 'Kitchen Appliances', 'Lighting', 'Entertainment & Security'],
+                datasets: [{
+                    data: [1281.60, 355.65, 230.63, 203.37, 160.20],
+                    backgroundColor: mainColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            }
+        });
+
+        // Consumption Chart (same data, different visual)
+        new Chart(document.getElementById('consumptionChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Cooling Load', 'Water Appliances', 'Kitchen Appliances', 'Lighting', 'Entertainment & Security'],
+                datasets: [{
+                    data: [1281.60, 355.65, 230.63, 203.37, 160.20],
+                    backgroundColor: mainColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                ...chartConfig.options,
+                cutout: '50%'
+            }
+        });
+
+        // Lighting Breakdown
+        new Chart(document.getElementById('lightingChart'), {
+            ...chartConfig,
+            data: {
+                labels: ['Flood Light (108 kWh)', 'Ceiling Light (43.2 kWh)', 'Wall Light (18.36 kWh)', 
+                         'Tube Light (15 kWh)', 'Spot Light (14.85 kWh)', 'Floor Light (3.96 kWh)'],
+                datasets: [{
+                    data: [108.00, 43.20, 18.36, 15.00, 14.85, 3.96],
+                    backgroundColor: lightingColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            }
+        });
+
+        // Cooling Load Breakdown
+        new Chart(document.getElementById('coolingChart'), {
+            ...chartConfig,
+            data: {
+                labels: ['Air Conditioner (1,080 kWh)', 'Ceiling Fan (162 kWh)', 'Wall Mount Fan (39.6 kWh)'],
+                datasets: [{
+                    data: [1080.00, 162.00, 39.60],
+                    backgroundColor: coolingColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            }
+        });
+
+        // Kitchen Appliances Breakdown
+        new Chart(document.getElementById('kitchenChart'), {
+            ...chartConfig,
+            data: {
+                labels: ['Refrigerator (180 kWh)', 'Induction Stove (45 kWh)', 'Mixer Grinder (5.63 kWh)'],
+                datasets: [{
+                    data: [180.00, 45.00, 5.63],
+                    backgroundColor: kitchenColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            }
+        });
+
+        // Water Appliances Breakdown
+        new Chart(document.getElementById('waterChart'), {
+            ...chartConfig,
+            data: {
+                labels: ['Water Heater (300 kWh)', 'Washing Machine (26.4 kWh)', 
+                         'Ironing Machine (18 kWh)', 'Water Pump (11.25 kWh)'],
+                datasets: [{
+                    data: [300.00, 26.40, 18.00, 11.25],
+                    backgroundColor: waterColors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            }
+        });
+    </script>
+</body>
+</html>
